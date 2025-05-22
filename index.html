@@ -2,211 +2,121 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Richiesta Sconto</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background-color: #f2f2f2;
       padding: 20px;
+      background-color: #f2f2f2;
     }
-
-    h1 {
-      text-align: center;
-    }
-
     form {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
       max-width: 500px;
       margin: auto;
-      background-color: white;
-      padding: 20px;
-      border-radius: 12px;
       box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-
-    label, select, input {
+    label {
       display: block;
-      width: 100%;
-      margin-bottom: 15px;
+      margin-top: 15px;
     }
-
-    button {
+    input, select, button {
       width: 100%;
       padding: 10px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
       background-color: #007bff;
       color: white;
-      border: none;
-      border-radius: 6px;
+      font-weight: bold;
       cursor: pointer;
-      font-size: 16px;
+      margin-top: 20px;
     }
-
     button:hover {
       background-color: #0056b3;
-    }
-
-    #attendi {
-      display: none;
-      text-align: center;
-      color: #333;
-      font-weight: bold;
     }
   </style>
 </head>
 <body>
-  <h1>Richiesta Sconto</h1>
-  <form id="formRichiesta" onsubmit="inviaTelegram(event)">
-    <label for="pv">Punto Vendita</label>
-    <input type="text" id="pv" name="pv" required>
 
-    <label for="prodotto">Prodotto</label>
-    <select id="prodotto" name="prodotto" required>
-      <option value="">--Seleziona--</option>
-      <option value="BIANCO">BIANCO</option>
-      <option value="BRUNO">BRUNO</option>
-    </select>
+<h2>Richiesta Sconto</h2>
 
-    <label for="codProd">Codice Prodotto</label>
-    <input type="text" id="codProd" name="codProd" required>
+<form id="formRichiesta" onsubmit="inviaRichiesta(event)">
+  <label for="pv">Punto Vendita</label>
+  <select id="pv" name="pv" required>
+    <option value="">-- Seleziona --</option>
+    <option value="Fano">Fano</option>
+    <option value="Monsano">Monsano</option>
+    <option value="Osimo">Osimo</option>
+    <option value="Macerata">Macerata</option>
+    <option value="Civitanova">Civitanova</option>
+    <option value="Pesaro">Pesaro</option>
+  </select>
 
-    <label for="cliente">Cliente</label>
-    <input type="text" id="cliente" name="cliente" required>
+  <label for="prodotto">Prodotto</label>
+  <select id="prodotto" name="prodotto" required>
+    <option value="">-- Seleziona --</option>
+    <option value="BIANCO">BIANCO</option>
+    <option value="BRUNO">BRUNO</option>
+  </select>
 
-    <label for="dataVendita">Data Vendita</label>
-    <input type="date" id="dataVendita" name="dataVendita" required>
+  <label for="codProd">Codice Prodotto</label>
+  <input type="text" id="codProd" name="codProd" required>
 
-    <label for="prezzoPartenza">Prezzo Partenza</label>
-    <input type="number" id="prezzoPartenza" name="prezzoPartenza" required>
+  <label for="cliente">Cliente</label>
+  <input type="text" id="cliente" name="cliente" required>
 
-    <label for="prezzoScontato">Prezzo Scontato</label>
-    <input type="number" id="prezzoScontato" name="prezzoScontato" required>
+  <label for="dataVendita">Data Vendita</label>
+  <input type="date" id="dataVendita" name="dataVendita" required>
 
-    <label for="sconto">Sconto (%)</label>
-    <input type="number" id="sconto" name="sconto" required>
+  <label for="prezzoPartenza">Prezzo Partenza</label>
+  <input type="number" id="prezzoPartenza" name="prezzoPartenza" required>
 
-    <button type="submit">Invia Richiesta</button>
-  </form>
+  <label for="prezzoScontato">Prezzo Scontato</label>
+  <input type="number" id="prezzoScontato" name="prezzoScontato" required>
 
-  <p id="attendi">Attendi... apertura Telegram in corso</p>
+  <label for="sconto">Sconto (%)</label>
+  <input type="number" id="sconto" name="sconto" required>
 
-  <script>
-    function verificaSconto() {
-      const tipo = document.getElementById("prodotto").value;
-      const sconto = parseFloat(document.getElementById("sconto").value);
-      if ((tipo === "BIANCO" && sconto > 10) || (tipo === "BRUNO" && sconto > 5)) {
-        alert(`Sconto massimo per ${tipo}: ${tipo === "BIANCO" ? "10%" : "5%"}`);
-        return false;
+  <button type="submit">Invia Richiesta</button>
+</form>
+
+<script>
+  function inviaRichiesta(event) {
+    event.preventDefault();
+
+    const dati = {
+      pv: document.getElementById("pv").value,
+      prodotto: document.getElementById("prodotto").value,
+      codProd: document.getElementById("codProd").value,
+      cliente: document.getElementById("cliente").value,
+      dataVendita: document.getElementById("dataVendita").value,
+      prezzoPartenza: parseFloat(document.getElementById("prezzoPartenza").value),
+      prezzoScontato: parseFloat(document.getElementById("prezzoScontato").value),
+      sconto: parseFloat(document.getElementById("sconto").value)
+    };
+
+    fetch("https://script.google.com/macros/s/AKfycbxKOiZb26RGycpBeCyAjYyDqbDrdHSJ3ZOfyGJzEOTMnHHA4TIkK-6Wr30RuycwMfAr3w/exec", {
+      method: "POST",
+      body: JSON.stringify(dati),
+      headers: {
+        "Content-Type": "application/json"
       }
-      return true;
-    }
+    })
+    .then(res => res.text())
+    .then(risposta => {
+      alert("Richiesta inviata con successo!");
+      document.getElementById("formRichiesta").reset();
+    })
+    .catch(err => {
+      alert("Errore nell'invio. Riprova.");
+      console.error("Errore:", err);
+    });
+  }
+</script>
 
-    function creaMessaggio() {
-      return `📍 *${document.getElementById("pv").value}*\n` +
-             `📦 Prodotto: ${document.getElementById("prodotto").value}\n` +
-             `🆔 Codice: ${document.getElementById("codProd").value}\n` +
-             `👤 Cliente: ${document.getElementById("cliente").value}\n` +
-             `📅 Data: ${document.getElementById("dataVendita").value}\n` +
-             `💶 Prezzo iniziale: ${document.getElementById("prezzoPartenza").value}€\n` +
-             `💸 Prezzo scontato: ${document.getElementById("prezzoScontato").value}€\n` +
-             `📉 Sconto: ${document.getElementById("sconto").value}%`;
-    }
-
-    async function inviaTelegram(event) {
-      event.preventDefault();
-      if (!verificaSconto()) return;
-
-      const messaggio = creaMessaggio();
-      const messaggioEncoded = encodeURIComponent(messaggio);
-
-      // ✅ INVIO A GOOGLE SHEET via Web App
-      const dati = {
-        pv: document.getElementById("pv").value,
-        prodotto: document.getElementById("prodotto").value,
-        codProd: document.getElementById("codProd").value,
-        cliente: document.getElementById("cliente").value,
-        dataVendita: document.getElementById("dataVendita").value,
-        prezzoPartenza: document.getElementById("prezzoPartenza").value,
-        prezzoScontato: document.getElementById("prezzoScontato").value,
-        sconto: document.getElementById("sconto").value
-      };
-
-      try {
-        await fetch("https://script.google.com/macros/s/AKfycbxKOiZb26RGycpBeCyAjYyDqbDrdHSJ3ZOfyGJzEOTMnHHA4TIkK-6Wr30RuycwMfAr3w/exec", {
-          method: "POST",
-          mode: "no-cors",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(dati)
-        });
-      } catch (e) {
-        console.error("Errore durante invio al foglio Google:", e);
-      }
-
-      // ✅ INVIO A TELEGRAM
-      const os = detectOS();
-      let telegramUrl;
-      let fallbackNeeded = false;
-
-      if (os === 'iOS') {
-        telegramUrl = `tg://msg?text=${messaggioEncoded}`;
-        const testLink = document.createElement('a');
-        testLink.href = telegramUrl;
-        testLink.style.display = 'none';
-        document.body.appendChild(testLink);
-
-        const timeout = setTimeout(() => {
-          fallbackNeeded = true;
-          mostraFallback(messaggio);
-        }, 1000);
-
-        const handleVisibilityChange = () => {
-          if (document.hidden) {
-            clearTimeout(timeout);
-            document.getElementById("attendi").style.display = "block";
-          }
-        };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange, { once: true });
-        testLink.click();
-        document.body.removeChild(testLink);
-
-        setTimeout(() => {
-          document.removeEventListener('visibilitychange', handleVisibilityChange);
-          if (!fallbackNeeded && !document.hidden) {
-            mostraFallback(messaggio);
-          }
-        }, 3000);
-
-      } else if (os === 'Android') {
-        telegramUrl = `intent://msg?text=${messaggioEncoded}#Intent;scheme=tg;package=org.telegram.messenger;end`;
-        try {
-          window.location.href = telegramUrl;
-          document.getElementById("attendi").style.display = "block";
-        } catch (e) {
-          const webUrl = `https://t.me/share/url?url=&text=${messaggioEncoded}`;
-          window.open(webUrl, '_blank');
-          document.getElementById("attendi").style.display = "block";
-        }
-      } else {
-        telegramUrl = `https://t.me/share/url?url=&text=${messaggioEncoded}`;
-        window.open(telegramUrl, '_blank');
-        document.getElementById("attendi").style.display = "block";
-      }
-    }
-
-    function detectOS() {
-      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-      if (/android/i.test(userAgent)) return "Android";
-      if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) return "iOS";
-      return "altro";
-    }
-
-    function mostraFallback(messaggio) {
-      const fallbackUrl = `https://t.me/share/url?url=&text=${encodeURIComponent(messaggio)}`;
-      window.open(fallbackUrl, '_blank');
-      document.getElementById("attendi").style.display = "block";
-    }
-  </script>
 </body>
 </html>
