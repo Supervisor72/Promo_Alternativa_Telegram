@@ -218,64 +218,7 @@ Autorizzi Sconto: (Rispondere con "SI" o "NO")`;
       });
     }
 
-    function inviaTelegram(event) {
-      event.preventDefault();
-      if (!verificaSconto()) return;
-
-      const messaggio = creaMessaggio();
-      const messaggioEncoded = encodeURIComponent(messaggio);
-      const os = detectOS();
-      
-      let telegramUrl;
-      let fallbackNeeded = false;
-
-      if (os === 'iOS') {
-        // Per iOS, prova prima il deep link nativo
-        telegramUrl = `tg://msg?text=${messaggioEncoded}`;
-        
-        // Crea un link nascosto per testare se l'app è installata
-        const testLink = document.createElement('a');
-        testLink.href = telegramUrl;
-        testLink.style.display = 'none';
-        document.body.appendChild(testLink);
-        
-        // Timeout per fallback
-        const timeout = setTimeout(() => {
-          fallbackNeeded = true;
-          mostraFallback(messaggio);
-        }, 1000);
-        
-        // Event listener per quando l'app si apre
-        const handleVisibilityChange = () => {
-          if (document.hidden) {
-            clearTimeout(timeout);
-            document.getElementById("attendi").style.display = "block";
-          }
-        };
-        
-        document.addEventListener('visibilitychange', handleVisibilityChange, { once: true });
-        
-        // Clicca il link
-        testLink.click();
-        document.body.removeChild(testLink);
-        
-        // Rimuovi il listener dopo 3 secondi
-        setTimeout(() => {
-          document.removeEventListener('visibilitychange', handleVisibilityChange);
-          if (!fallbackNeeded && !document.hidden) {
-            mostraFallback(messaggio);
-          }
-        }, 3000);
-        
-      } else if (os === 'Android') {
-        // Per Android, usa intent
-        telegramUrl = `intent://msg?text=${messaggioEncoded}#Intent;scheme=tg;package=org.telegram.messenger;end`;
-        
-        try {
-          window.location.href = telegramUrl;
-          document.getElementById("attendi").style.display = "block";
-        } catch (e) {
-          // Fallback per Android
+// Fallback per Android
           const webUrl = `https://t.me/share/url?url=&text=${messaggioEncoded}`;
           window.open(webUrl, '_blank');
           document.getElementById("attendi").style.display = "block";
