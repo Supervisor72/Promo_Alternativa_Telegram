@@ -12,21 +12,25 @@
       padding: 20px;
       background-color: #f2f2f2;
     }
+
     h1 {
       text-align: center;
       color: #333;
     }
+
     form {
       background-color: #fff;
       padding: 20px;
       border-radius: 8px;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
+
     label {
       font-weight: bold;
       margin-bottom: 5px;
       display: block;
     }
+
     select, input[type="text"], input[type="number"], input[type="date"] {
       width: 100%;
       padding: 10px;
@@ -36,6 +40,7 @@
       box-sizing: border-box;
       font-size: 16px;
     }
+
     button {
       background-color: #0088cc;
       color: white;
@@ -47,9 +52,11 @@
       width: 100%;
       margin-top: 10px;
     }
+
     button:hover {
       background-color: #0077b3;
     }
+
     .error {
       color: red;
       font-size: 14px;
@@ -57,6 +64,7 @@
       margin-bottom: 10px;
       display: none;
     }
+
     .attendi {
       color: #cc0000;
       background-color: #ffe6e6;
@@ -68,6 +76,7 @@
       margin-top: 15px;
       display: none;
     }
+
     .fallback-message {
       background-color: #fff3cd;
       border: 1px solid #ffeaa7;
@@ -76,6 +85,7 @@
       margin-top: 15px;
       display: none;
     }
+
     .copy-button {
       background-color: #28a745;
       color: white;
@@ -86,17 +96,21 @@
       font-size: 14px;
       margin-top: 10px;
     }
+
     .copy-button:hover {
       background-color: #218838;
     }
+
     @media (max-width: 480px) {
       body {
         padding: 10px;
       }
+
       select, input, button {
         font-size: 15px;
         margin-bottom: 20px;
       }
+
       .attendi {
         font-size: 16px;
         padding: 12px;
@@ -105,8 +119,6 @@
   </style>
 
   <script>
-    const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxKOiZb26RGycpBeCyAjYyDqbDrdHSJ3ZOfyGJzEOTMnHHA4TIkK-6Wr30RuycwMfAr3w/exec";
-
     function verificaSconto() {
       const prodotto = document.getElementById("prodotto").value;
       const sconto = parseFloat(document.getElementById("sconto").value);
@@ -206,88 +218,138 @@ Autorizzi Sconto: (Rispondere con "SI" o "NO")`;
       });
     }
 
-    async function inviaTelegram(event) {
+    function inviaTelegram(event) {
       event.preventDefault();
       if (!verificaSconto()) return;
-
-      const pv = document.getElementById("pv").value;
-      const prod = document.getElementById("prodotto").value;
-      const codProd = document.getElementById("codProd").value;
-      const cliente = document.getElementById("cliente").value;
-      const data = document.getElementById("dataVendita").value;
-      const prezzoPart = document.getElementById("prezzoPartenza").value;
-      const prezzoScont = document.getElementById("prezzoScontato").value;
-      const sconto = document.getElementById("sconto").value;
 
       const messaggio = creaMessaggio();
       const messaggioEncoded = encodeURIComponent(messaggio);
       const os = detectOS();
-
-      // INVIO WEB APP
-      try {
-        const response = await fetch(WEB_APP_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            puntoVendita: pv,
-            prodotto: prod,
-            codiceProdotto: codProd,
-            cliente: cliente,
-            dataVendita: data,
-            prezzoPartenza: prezzoPart,
-            prezzoScontato: prezzoScont,
-            scontoRichiesto: sconto
-          })
-        });
-        if (!response.ok) {
-          alert("Errore nell'invio dei dati al server, riprova.");
-          return;
-        }
-      } catch (error) {
-        alert("Errore di rete o server, riprova.");
-        return;
-      }
+      
+      let telegramUrl;
+      let fallbackNeeded = false;
 
       if (os === 'iOS') {
-        let telegramUrl = `tg://msg?text=${messaggioEncoded}`;
+        // Per iOS, prova prima il deep link nativo
+        telegramUrl = `tg://msg?text=${messaggioEncoded}`;
+        
+        // Crea un link nascosto per testare se l'app è installata
         const testLink = document.createElement('a');
         testLink.href = telegramUrl;
         testLink.style.display = 'none';
         document.body.appendChild(testLink);
+        
+        // Timeout per fallback
         const timeout = setTimeout(() => {
+          fallbackNeeded = true;
           mostraFallback(messaggio);
         }, 1000);
+        
+        // Event listener per quando l'app si apre
         const handleVisibilityChange = () => {
           if (document.hidden) {
             clearTimeout(timeout);
             document.getElementById("attendi").style.display = "block";
           }
         };
+        
         document.addEventListener('visibilitychange', handleVisibilityChange, { once: true });
+        
+        // Clicca il link
         testLink.click();
         document.body.removeChild(testLink);
+        
+        // Rimuovi il listener dopo 3 secondi
         setTimeout(() => {
           document.removeEventListener('visibilitychange', handleVisibilityChange);
-          if (!document.hidden) {
+          if (!fallbackNeeded && !document.hidden) {
             mostraFallback(messaggio);
           }
         }, 3000);
+        
       } else if (os === 'Android') {
-        const telegramUrl = `intent://msg?text=${messaggioEncoded}#Intent;scheme=tg;package=org.telegram.messenger;end`;
+        // Per Android, usa intent
+        telegramUrl = `intent://msg?text=${messaggioEncoded}#Intent;scheme=tg;package=org.telegram.messenger;end`;
+        
         try {
           window.location.href = telegramUrl;
           document.getElementById("attendi").style.display = "block";
         } catch (e) {
+          // Fallback per Android
           const webUrl = `https://t.me/share/url?url=&text=${messaggioEncoded}`;
           window.open(webUrl, '_blank');
           document.getElementById("attendi").style.display = "block";
         }
       } else {
-        const telegramUrl = `https://t.me/share/url?url=&text=${messaggioEncoded}`;
+        // Per desktop e altri sistemi
+        telegramUrl = `https://t.me/share/url?url=&text=${messaggioEncoded}`;
         window.open(telegramUrl, '_blank');
         document.getElementById("attendi").style.display = "block";
       }
     }
 
     function mostraFallback(messaggio) {
-      document.getElementById("
+      document.getElementById("fallbackMessage").textContent = messaggio;
+      document.getElementById("fallbackDiv").style.display = "block";
+      document.getElementById("attendi").style.display = "none";
+    }
+  </script>
+</head>
+
+<body>
+  <h1>Richiesta Promo Alternativa</h1>
+  <form id="formRichiesta">
+    <label>Punto Vendita:</label>
+    <select id="pv" required>
+      <option value="">-- Seleziona un punto vendita --</option>
+      <option value="Fano">Fano</option>
+      <option value="Monsano">Monsano</option>
+      <option value="Osimo">Osimo</option>
+      <option value="Macerata">Macerata</option>
+      <option value="Civitanova">Civitanova</option>
+      <option value="Pesaro">Pesaro</option>
+    </select>
+
+    <label>Prodotto:</label>
+    <select id="prodotto" required onchange="aggiornaScontoMassimo()">
+      <option value="">-- Seleziona categoria prodotto --</option>
+      <option value="TV">TV</option>
+      <option value="BIANCO">BIANCO</option>
+    </select>
+
+    <label>Codice Prodotto:</label>
+    <input type="text" id="codProd" required>
+
+    <label>Cognome Nome Cliente:</label>
+    <input type="text" id="cliente" required>
+
+    <label>Data Vendita:</label>
+    <input type="date" id="dataVendita" required>
+
+    <label>Prezzo Partenza (€):</label>
+    <input type="number" id="prezzoPartenza" step="0.01" required>
+
+    <label>Prezzo Scontato (€):</label>
+    <input type="number" id="prezzoScontato" step="0.01" required>
+
+    <label>Sconto Richiesto <span id="scontoMax"></span>:</label>
+    <input type="number" id="sconto" min="1" required>
+    <div id="errorSconto" class="error"></div>
+
+    <button onclick="inviaTelegram(event)">Invia tramite Telegram</button>
+  </form>
+
+  <div id="attendi" class="attendi">
+    TELEGRAM SI APRIRÀ. SCEGLI IL DESTINATARIO E INVIA IL MESSAGGIO.
+  </div>
+
+  <div id="fallbackDiv" class="fallback-message">
+    <strong>Telegram non si è aperto automaticamente?</strong><br>
+    Copia il messaggio qui sotto e incollalo manualmente in Telegram:
+    <div style="background-color: #f8f9fa; padding: 10px; margin: 10px 0; border-left: 4px solid #007bff; white-space: pre-wrap; font-family: monospace; font-size: 14px;" id="fallbackMessage"></div>
+    <button class="copy-button" id="copyBtn" onclick="copiaMessaggio()">Copia Messaggio</button>
+    <br><br>
+    <small>Oppure <a href="https://t.me/" target="_blank">apri Telegram Web</a> manualmente.</small>
+  </div>
+</body>
+</html>
