@@ -57,6 +57,11 @@
       background-color: #0077b3;
     }
 
+    button:disabled {
+      background-color: #999;
+      cursor: not-allowed;
+    }
+
     .error {
       color: red;
       font-size: 14px;
@@ -218,7 +223,107 @@ Autorizzi Sconto: (Rispondere con "SI" o "NO")`;
       });
     }
 
-// Fallback per Android
+    async function salvaInSheet() {
+      const dati = {
+        puntoVendita: document.getElementById("pv").value,
+        prodotto: document.getElementById("prodotto").value,
+        codiceProdotto: document.getElementById("codProd").value,
+        cliente: document.getElementById("cliente").value,
+        dataVendita: document.getElementById("dataVendita").value,
+        prezzoPartenza: document.getElementById("prezzoPartenza").value,
+        prezzoScontato: document.getElementById("prezzoScontato").value,
+        scontoRichiesto: document.getElementById("sconto").value + "%"
+      };
+
+      console.log('Dati da inviare:', dati);
+
+      try {
+        const response = await fetch('https://script.google.com/macros/s/AKfycbxKOiZb26RGycpBeCyAjYyDqbDrdHSJ3ZOfyGJzEOTMnHHA4TIkK-6Wr30RuycwMfAr3w/exec', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(dati)
+        });
+        
+        console.log('Response status:', response.status);
+        console.log('Dati salvati nel Google Sheet');
+        return true;
+      } catch (error) {
+        console.error('Errore nel salvare i dati:', error);
+        alert('Errore nel salvare i dati: ' + error.message);
+        return false;
+      }
+    }
+
+    async function inviaTelegram(event) {
+      event.preventDefault();
+      if (!verificaSconto()) return;
+
+      // Mostra messaggio di caricamento
+      const button = event.target;
+      const originalText = button.textContent;
+      button.textContent = "Salvando...";
+      button.disabled = true;
+
+      // Salva prima nel Google Sheet
+      await salvaInSheet();
+
+      // Poi invia tramite Telegram
+      const messaggio = creaMessaggio();
+      const messaggioEncoded = encodeURIComponent(messaggio);
+      const os = detectOS();
+      
+      let telegramUrl;
+      let fallbackNeeded = false;
+
+      if (os === 'iOS') {
+        // Per iOS, prova prima il deep link nativo
+        telegramUrl = `tg://msg?text=${messaggioEncoded}`;
+        
+        // Crea un link nascosto per testare se l'app è installata
+        const testLink = document.createElement('a');
+        testLink.href = telegramUrl;
+        testLink.style.display = 'none';
+        document.body.appendChild(testLink);
+        
+        // Timeout per fallback
+        const timeout = setTimeout(() => {
+          fallbackNeeded = true;
+          mostraFallback(messaggio);
+        }, 1000);
+        
+        // Event listener per quando l'app si apre
+        const handleVisibilityChange = () => {
+          if (document.hidden) {
+            clearTimeout(timeout);
+            document.getElementById("attendi").style.display = "block";
+          }
+        };
+        
+        document.addEventListener('visibilitychange', handleVisibilityChange, { once: true });
+        
+        // Clicca il link
+        testLink.click();
+        document.body.removeChild(testLink);
+        
+        // Rimuovi il listener dopo 3 secondi
+        setTimeout(() => {
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+          if (!fallbackNeeded && !document.hidden) {
+            mostraFallback(messaggio);
+          }
+        }, 3000);
+        
+      } else if (os === 'Android') {
+        // Per Android, usa intent
+        telegramUrl = `intent://msg?text=${messaggioEncoded}#Intent;scheme=tg;package=org.telegram.messenger;end`;
+        
+        try {
+          window.location.href = telegramUrl;
+          document.getElementById("attendi").style.display = "block";
+        } catch (e) {
+          // Fallback per Android
           const webUrl = `https://t.me/share/url?url=&text=${messaggioEncoded}`;
           window.open(webUrl, '_blank');
           document.getElementById("attendi").style.display = "block";
@@ -229,6 +334,12 @@ Autorizzi Sconto: (Rispondere con "SI" o "NO")`;
         window.open(telegramUrl, '_blank');
         document.getElementById("attendi").style.display = "block";
       }
+
+      // Ripristina il pulsante
+      setTimeout(() => {
+        button.textContent = originalText;
+        button.disabled = false;
+      }, 2000);
     }
 
     function mostraFallback(messaggio) {
