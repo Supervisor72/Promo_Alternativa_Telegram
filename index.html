@@ -77,6 +77,30 @@
       display: none;
     }
 
+    .fallback-message {
+      background-color: #fff3cd;
+      border: 1px solid #ffeaa7;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 15px;
+      display: none;
+    }
+
+    .copy-button {
+      background-color: #28a745;
+      color: white;
+      padding: 8px 16px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+
+    .copy-button:hover {
+      background-color: #218838;
+    }
+
     @media (max-width: 480px) {
       body {
         padding: 10px;
@@ -130,39 +154,144 @@
       }
     }
 
+    function detectOS() {
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+        return 'iOS';
+      } else if (/android/i.test(userAgent)) {
+        return 'Android';
+      }
+      return 'Other';
+    }
+
+    function creaMessaggio() {
+      const pv = document.getElementById("pv").value;
+      const prod = document.getElementById("prodotto").value;
+      const codProd = document.getElementById("codProd").value;
+      const cliente = document.getElementById("cliente").value;
+      const data = document.getElementById("dataVendita").value;
+      const prezzoPart = document.getElementById("prezzoPartenza").value;
+      const prezzoScont = document.getElementById("prezzoScontato").value;
+      const sconto = document.getElementById("sconto").value;
+
+      return `Punto Vendita: ${pv}
+Prodotto: ${prod}
+Codice Prodotto: ${codProd}
+Cliente: ${cliente}
+Data Vendita: ${data}
+Prezzo Partenza: €${prezzoPart}
+Prezzo Scontato: €${prezzoScont}
+Sconto Richiesto: ${sconto}%
+
+Autorizzi Sconto: (Rispondere con "SI" o "NO")`;
+    }
+
+    function copiaMessaggio() {
+      const messaggio = creaMessaggio();
+      navigator.clipboard.writeText(messaggio).then(() => {
+        const button = document.getElementById("copyBtn");
+        const originalText = button.textContent;
+        button.textContent = "✓ Copiato!";
+        button.style.backgroundColor = "#155724";
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.style.backgroundColor = "#28a745";
+        }, 2000);
+      }).catch(() => {
+        // Fallback per browser più vecchi
+        const textArea = document.createElement("textarea");
+        textArea.value = messaggio;
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        const button = document.getElementById("copyBtn");
+        const originalText = button.textContent;
+        button.textContent = "✓ Copiato!";
+        button.style.backgroundColor = "#155724";
+        setTimeout(() => {
+          button.textContent = originalText;
+          button.style.backgroundColor = "#28a745";
+        }, 2000);
+      });
+    }
+
     function inviaTelegram(event) {
       event.preventDefault();
       if (!verificaSconto()) return;
 
-      const pv = encodeURIComponent(document.getElementById("pv").value);
-      const prod = encodeURIComponent(document.getElementById("prodotto").value);
-      const codProd = encodeURIComponent(document.getElementById("codProd").value);
-      const cliente = encodeURIComponent(document.getElementById("cliente").value);
-      const data = encodeURIComponent(document.getElementById("dataVendita").value);
-      const prezzoPart = encodeURIComponent(document.getElementById("prezzoPartenza").value);
-      const prezzoScont = encodeURIComponent(document.getElementById("prezzoScontato").value);
-      const sconto = encodeURIComponent(document.getElementById("sconto").value);
+      const messaggio = creaMessaggio();
+      const messaggioEncoded = encodeURIComponent(messaggio);
+      const os = detectOS();
+      
+      let telegramUrl;
+      let fallbackNeeded = false;
 
-      const messaggio =
-        `Punto Vendita: ${pv}%0A` +
-        `Prodotto: ${prod}%0A` +
-        `Codice Prodotto: ${codProd}%0A` +
-        `Cliente: ${cliente}%0A` +
-        `Data Vendita: ${data}%0A` +
-        `Prezzo Partenza: €${prezzoPart}%0A` +
-        `Prezzo Scontato: €${prezzoScont}%0A` +
-        `Sconto Richiesto: ${sconto}%0A%0A` +
-        `Autorizzi Sconto: (Rispondere con "SI" o "NO")`;
+      if (os === 'iOS') {
+        // Per iOS, prova prima il deep link nativo
+        telegramUrl = `tg://msg?text=${messaggioEncoded}`;
+        
+        // Crea un link nascosto per testare se l'app è installata
+        const testLink = document.createElement('a');
+        testLink.href = telegramUrl;
+        testLink.style.display = 'none';
+        document.body.appendChild(testLink);
+        
+        // Timeout per fallback
+        const timeout = setTimeout(() => {
+          fallbackNeeded = true;
+          mostraFallback(messaggio);
+        }, 1000);
+        
+        // Event listener per quando l'app si apre
+        const handleVisibilityChange = () => {
+          if (document.hidden) {
+            clearTimeout(timeout);
+            document.getElementById("attendi").style.display = "block";
+          }
+        };
+        
+        document.addEventListener('visibilitychange', handleVisibilityChange, { once: true });
+        
+        // Clicca il link
+        testLink.click();
+        document.body.removeChild(testLink);
+        
+        // Rimuovi il listener dopo 3 secondi
+        setTimeout(() => {
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+          if (!fallbackNeeded && !document.hidden) {
+            mostraFallback(messaggio);
+          }
+        }, 3000);
+        
+      } else if (os === 'Android') {
+        // Per Android, usa intent
+        telegramUrl = `intent://msg?text=${messaggioEncoded}#Intent;scheme=tg;package=org.telegram.messenger;end`;
+        
+        try {
+          window.location.href = telegramUrl;
+          document.getElementById("attendi").style.display = "block";
+        } catch (e) {
+          // Fallback per Android
+          const webUrl = `https://t.me/share/url?url=&text=${messaggioEncoded}`;
+          window.open(webUrl, '_blank');
+          document.getElementById("attendi").style.display = "block";
+        }
+      } else {
+        // Per desktop e altri sistemi
+        telegramUrl = `https://t.me/share/url?url=&text=${messaggioEncoded}`;
+        window.open(telegramUrl, '_blank');
+        document.getElementById("attendi").style.display = "block";
+      }
+    }
 
-      const telegramUrl = `https://t.me/share/url?text=${messaggio}`;
-      const link = document.createElement('a');
-      link.href = telegramUrl;
-      link.target = '_blank';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
-      document.getElementById("attendi").style.display = "block";
+    function mostraFallback(messaggio) {
+      document.getElementById("fallbackMessage").textContent = messaggio;
+      document.getElementById("fallbackDiv").style.display = "block";
+      document.getElementById("attendi").style.display = "none";
     }
   </script>
 </head>
@@ -212,6 +341,15 @@
 
   <div id="attendi" class="attendi">
     TELEGRAM SI APRIRÀ. SCEGLI IL DESTINATARIO E INVIA IL MESSAGGIO.
+  </div>
+
+  <div id="fallbackDiv" class="fallback-message">
+    <strong>Telegram non si è aperto automaticamente?</strong><br>
+    Copia il messaggio qui sotto e incollalo manualmente in Telegram:
+    <div style="background-color: #f8f9fa; padding: 10px; margin: 10px 0; border-left: 4px solid #007bff; white-space: pre-wrap; font-family: monospace; font-size: 14px;" id="fallbackMessage"></div>
+    <button class="copy-button" id="copyBtn" onclick="copiaMessaggio()">Copia Messaggio</button>
+    <br><br>
+    <small>Oppure <a href="https://t.me/" target="_blank">apri Telegram Web</a> manualmente.</small>
   </div>
 </body>
 </html>
