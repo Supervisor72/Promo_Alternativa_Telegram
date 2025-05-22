@@ -1,409 +1,212 @@
 <!DOCTYPE html>
 <html lang="it">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Richiesta Condizione Alternativa</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Richiesta Sconto</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
       background-color: #f2f2f2;
+      padding: 20px;
     }
 
     h1 {
       text-align: center;
-      color: #333;
     }
 
     form {
-      background-color: #fff;
+      max-width: 500px;
+      margin: auto;
+      background-color: white;
       padding: 20px;
-      border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
 
-    label {
-      font-weight: bold;
-      margin-bottom: 5px;
+    label, select, input {
       display: block;
-    }
-
-    select, input[type="text"], input[type="number"], input[type="date"] {
       width: 100%;
-      padding: 10px;
       margin-bottom: 15px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      box-sizing: border-box;
-      font-size: 16px;
     }
 
     button {
-      background-color: #0088cc;
+      width: 100%;
+      padding: 10px;
+      background-color: #007bff;
       color: white;
-      padding: 12px 20px;
       border: none;
-      border-radius: 4px;
+      border-radius: 6px;
       cursor: pointer;
       font-size: 16px;
-      width: 100%;
-      margin-top: 10px;
     }
 
     button:hover {
-      background-color: #0077b3;
+      background-color: #0056b3;
     }
 
-    button:disabled {
-      background-color: #999;
-      cursor: not-allowed;
-    }
-
-    .error {
-      color: red;
-      font-size: 14px;
-      margin-top: -10px;
-      margin-bottom: 10px;
+    #attendi {
       display: none;
-    }
-
-    .attendi {
-      color: #cc0000;
-      background-color: #ffe6e6;
-      padding: 15px;
-      border-radius: 6px;
       text-align: center;
-      font-size: 18px;
+      color: #333;
       font-weight: bold;
-      margin-top: 15px;
-      display: none;
-    }
-
-    .fallback-message {
-      background-color: #fff3cd;
-      border: 1px solid #ffeaa7;
-      padding: 15px;
-      border-radius: 6px;
-      margin-top: 15px;
-      display: none;
-    }
-
-    .copy-button {
-      background-color: #28a745;
-      color: white;
-      padding: 8px 16px;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 14px;
-      margin-top: 10px;
-    }
-
-    .copy-button:hover {
-      background-color: #218838;
-    }
-
-    @media (max-width: 480px) {
-      body {
-        padding: 10px;
-      }
-
-      select, input, button {
-        font-size: 15px;
-        margin-bottom: 20px;
-      }
-
-      .attendi {
-        font-size: 16px;
-        padding: 12px;
-      }
     }
   </style>
+</head>
+<body>
+  <h1>Richiesta Sconto</h1>
+  <form id="formRichiesta" onsubmit="inviaTelegram(event)">
+    <label for="pv">Punto Vendita</label>
+    <input type="text" id="pv" name="pv" required>
+
+    <label for="prodotto">Prodotto</label>
+    <select id="prodotto" name="prodotto" required>
+      <option value="">--Seleziona--</option>
+      <option value="BIANCO">BIANCO</option>
+      <option value="BRUNO">BRUNO</option>
+    </select>
+
+    <label for="codProd">Codice Prodotto</label>
+    <input type="text" id="codProd" name="codProd" required>
+
+    <label for="cliente">Cliente</label>
+    <input type="text" id="cliente" name="cliente" required>
+
+    <label for="dataVendita">Data Vendita</label>
+    <input type="date" id="dataVendita" name="dataVendita" required>
+
+    <label for="prezzoPartenza">Prezzo Partenza</label>
+    <input type="number" id="prezzoPartenza" name="prezzoPartenza" required>
+
+    <label for="prezzoScontato">Prezzo Scontato</label>
+    <input type="number" id="prezzoScontato" name="prezzoScontato" required>
+
+    <label for="sconto">Sconto (%)</label>
+    <input type="number" id="sconto" name="sconto" required>
+
+    <button type="submit">Invia Richiesta</button>
+  </form>
+
+  <p id="attendi">Attendi... apertura Telegram in corso</p>
 
   <script>
     function verificaSconto() {
-      const prodotto = document.getElementById("prodotto").value;
+      const tipo = document.getElementById("prodotto").value;
       const sconto = parseFloat(document.getElementById("sconto").value);
-      const errorMsg = document.getElementById("errorSconto");
-
-      if (prodotto === "TV" && sconto > 5) {
-        errorMsg.style.display = "block";
-        errorMsg.textContent = "Per la categoria TV lo sconto massimo è del 5%";
+      if ((tipo === "BIANCO" && sconto > 10) || (tipo === "BRUNO" && sconto > 5)) {
+        alert(`Sconto massimo per ${tipo}: ${tipo === "BIANCO" ? "10%" : "5%"}`);
         return false;
-      } else if (prodotto === "BIANCO" && sconto > 10) {
-        errorMsg.style.display = "block";
-        errorMsg.textContent = "Per la categoria BIANCO lo sconto massimo è del 10%";
-        return false;
-      } else {
-        errorMsg.style.display = "none";
-        return true;
       }
-    }
-
-    function aggiornaScontoMassimo() {
-      const prodotto = document.getElementById("prodotto").value;
-      const scontoInput = document.getElementById("sconto");
-
-      if (prodotto === "TV") {
-        scontoInput.max = "5";
-        document.getElementById("scontoMax").textContent = "(max 5%)";
-      } else if (prodotto === "BIANCO") {
-        scontoInput.max = "10";
-        document.getElementById("scontoMax").textContent = "(max 10%)";
-      } else {
-        scontoInput.removeAttribute("max");
-        document.getElementById("scontoMax").textContent = "";
-      }
-    }
-
-    function detectOS() {
-      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-      if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
-        return 'iOS';
-      } else if (/android/i.test(userAgent)) {
-        return 'Android';
-      }
-      return 'Other';
+      return true;
     }
 
     function creaMessaggio() {
-      const pv = document.getElementById("pv").value;
-      const prod = document.getElementById("prodotto").value;
-      const codProd = document.getElementById("codProd").value;
-      const cliente = document.getElementById("cliente").value;
-      const data = document.getElementById("dataVendita").value;
-      const prezzoPart = document.getElementById("prezzoPartenza").value;
-      const prezzoScont = document.getElementById("prezzoScontato").value;
-      const sconto = document.getElementById("sconto").value;
-
-      return `Punto Vendita: ${pv}
-Prodotto: ${prod}
-Codice Prodotto: ${codProd}
-Cliente: ${cliente}
-Data Vendita: ${data}
-Prezzo Partenza: €${prezzoPart}
-Prezzo Scontato: €${prezzoScont}
-Sconto Richiesto: ${sconto}%
-
-Autorizzi Sconto: (Rispondere con "SI" o "NO")`;
-    }
-
-    function copiaMessaggio() {
-      const messaggio = creaMessaggio();
-      navigator.clipboard.writeText(messaggio).then(() => {
-        const button = document.getElementById("copyBtn");
-        const originalText = button.textContent;
-        button.textContent = "✓ Copiato!";
-        button.style.backgroundColor = "#155724";
-        setTimeout(() => {
-          button.textContent = originalText;
-          button.style.backgroundColor = "#28a745";
-        }, 2000);
-      }).catch(() => {
-        // Fallback per browser più vecchi
-        const textArea = document.createElement("textarea");
-        textArea.value = messaggio;
-        document.body.appendChild(textArea);
-        textArea.focus();
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        
-        const button = document.getElementById("copyBtn");
-        const originalText = button.textContent;
-        button.textContent = "✓ Copiato!";
-        button.style.backgroundColor = "#155724";
-        setTimeout(() => {
-          button.textContent = originalText;
-          button.style.backgroundColor = "#28a745";
-        }, 2000);
-      });
-    }
-
-    async function salvaInSheet() {
-      const dati = {
-        puntoVendita: document.getElementById("pv").value,
-        prodotto: document.getElementById("prodotto").value,
-        codiceProdotto: document.getElementById("codProd").value,
-        cliente: document.getElementById("cliente").value,
-        dataVendita: document.getElementById("dataVendita").value,
-        prezzoPartenza: document.getElementById("prezzoPartenza").value,
-        prezzoScontato: document.getElementById("prezzoScontato").value,
-        scontoRichiesto: document.getElementById("sconto").value + "%"
-      };
-
-      console.log('Dati da inviare:', dati);
-
-      try {
-        const response = await fetch('https://script.google.com/macros/s/AKfycbxKOiZb26RGycpBeCyAjYyDqbDrdHSJ3ZOfyGJzEOTMnHHA4TIkK-6Wr30RuycwMfAr3w/exec', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(dati)
-        });
-        
-        console.log('Response status:', response.status);
-        console.log('Dati salvati nel Google Sheet');
-        return true;
-      } catch (error) {
-        console.error('Errore nel salvare i dati:', error);
-        alert('Errore nel salvare i dati: ' + error.message);
-        return false;
-      }
+      return `📍 *${document.getElementById("pv").value}*\n` +
+             `📦 Prodotto: ${document.getElementById("prodotto").value}\n` +
+             `🆔 Codice: ${document.getElementById("codProd").value}\n` +
+             `👤 Cliente: ${document.getElementById("cliente").value}\n` +
+             `📅 Data: ${document.getElementById("dataVendita").value}\n` +
+             `💶 Prezzo iniziale: ${document.getElementById("prezzoPartenza").value}€\n` +
+             `💸 Prezzo scontato: ${document.getElementById("prezzoScontato").value}€\n` +
+             `📉 Sconto: ${document.getElementById("sconto").value}%`;
     }
 
     async function inviaTelegram(event) {
       event.preventDefault();
       if (!verificaSconto()) return;
 
-      // Mostra messaggio di caricamento
-      const button = event.target;
-      const originalText = button.textContent;
-      button.textContent = "Salvando...";
-      button.disabled = true;
-
-      // Salva prima nel Google Sheet
-      await salvaInSheet();
-
-      // Poi invia tramite Telegram
       const messaggio = creaMessaggio();
       const messaggioEncoded = encodeURIComponent(messaggio);
+
+      // ✅ INVIO A GOOGLE SHEET via Web App
+      const dati = {
+        pv: document.getElementById("pv").value,
+        prodotto: document.getElementById("prodotto").value,
+        codProd: document.getElementById("codProd").value,
+        cliente: document.getElementById("cliente").value,
+        dataVendita: document.getElementById("dataVendita").value,
+        prezzoPartenza: document.getElementById("prezzoPartenza").value,
+        prezzoScontato: document.getElementById("prezzoScontato").value,
+        sconto: document.getElementById("sconto").value
+      };
+
+      try {
+        await fetch("https://script.google.com/macros/s/AKfycbxKOiZb26RGycpBeCyAjYyDqbDrdHSJ3ZOfyGJzEOTMnHHA4TIkK-6Wr30RuycwMfAr3w/exec", {
+          method: "POST",
+          mode: "no-cors",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(dati)
+        });
+      } catch (e) {
+        console.error("Errore durante invio al foglio Google:", e);
+      }
+
+      // ✅ INVIO A TELEGRAM
       const os = detectOS();
-      
       let telegramUrl;
       let fallbackNeeded = false;
 
       if (os === 'iOS') {
-        // Per iOS, prova prima il deep link nativo
         telegramUrl = `tg://msg?text=${messaggioEncoded}`;
-        
-        // Crea un link nascosto per testare se l'app è installata
         const testLink = document.createElement('a');
         testLink.href = telegramUrl;
         testLink.style.display = 'none';
         document.body.appendChild(testLink);
-        
-        // Timeout per fallback
+
         const timeout = setTimeout(() => {
           fallbackNeeded = true;
           mostraFallback(messaggio);
         }, 1000);
-        
-        // Event listener per quando l'app si apre
+
         const handleVisibilityChange = () => {
           if (document.hidden) {
             clearTimeout(timeout);
             document.getElementById("attendi").style.display = "block";
           }
         };
-        
+
         document.addEventListener('visibilitychange', handleVisibilityChange, { once: true });
-        
-        // Clicca il link
         testLink.click();
         document.body.removeChild(testLink);
-        
-        // Rimuovi il listener dopo 3 secondi
+
         setTimeout(() => {
           document.removeEventListener('visibilitychange', handleVisibilityChange);
           if (!fallbackNeeded && !document.hidden) {
             mostraFallback(messaggio);
           }
         }, 3000);
-        
+
       } else if (os === 'Android') {
-        // Per Android, usa intent
         telegramUrl = `intent://msg?text=${messaggioEncoded}#Intent;scheme=tg;package=org.telegram.messenger;end`;
-        
         try {
           window.location.href = telegramUrl;
           document.getElementById("attendi").style.display = "block";
         } catch (e) {
-          // Fallback per Android
           const webUrl = `https://t.me/share/url?url=&text=${messaggioEncoded}`;
           window.open(webUrl, '_blank');
           document.getElementById("attendi").style.display = "block";
         }
       } else {
-        // Per desktop e altri sistemi
         telegramUrl = `https://t.me/share/url?url=&text=${messaggioEncoded}`;
         window.open(telegramUrl, '_blank');
         document.getElementById("attendi").style.display = "block";
       }
+    }
 
-      // Ripristina il pulsante
-      setTimeout(() => {
-        button.textContent = originalText;
-        button.disabled = false;
-      }, 2000);
+    function detectOS() {
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      if (/android/i.test(userAgent)) return "Android";
+      if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) return "iOS";
+      return "altro";
     }
 
     function mostraFallback(messaggio) {
-      document.getElementById("fallbackMessage").textContent = messaggio;
-      document.getElementById("fallbackDiv").style.display = "block";
-      document.getElementById("attendi").style.display = "none";
+      const fallbackUrl = `https://t.me/share/url?url=&text=${encodeURIComponent(messaggio)}`;
+      window.open(fallbackUrl, '_blank');
+      document.getElementById("attendi").style.display = "block";
     }
   </script>
-</head>
-
-<body>
-  <h1>Richiesta Promo Alternativa</h1>
-  <form id="formRichiesta">
-    <label>Punto Vendita:</label>
-    <select id="pv" required>
-      <option value="">-- Seleziona un punto vendita --</option>
-      <option value="Fano">Fano</option>
-      <option value="Monsano">Monsano</option>
-      <option value="Osimo">Osimo</option>
-      <option value="Macerata">Macerata</option>
-      <option value="Civitanova">Civitanova</option>
-      <option value="Pesaro">Pesaro</option>
-    </select>
-
-    <label>Prodotto:</label>
-    <select id="prodotto" required onchange="aggiornaScontoMassimo()">
-      <option value="">-- Seleziona categoria prodotto --</option>
-      <option value="TV">TV</option>
-      <option value="BIANCO">BIANCO</option>
-    </select>
-
-    <label>Codice Prodotto:</label>
-    <input type="text" id="codProd" required>
-
-    <label>Cognome Nome Cliente:</label>
-    <input type="text" id="cliente" required>
-
-    <label>Data Vendita:</label>
-    <input type="date" id="dataVendita" required>
-
-    <label>Prezzo Partenza (€):</label>
-    <input type="number" id="prezzoPartenza" step="0.01" required>
-
-    <label>Prezzo Scontato (€):</label>
-    <input type="number" id="prezzoScontato" step="0.01" required>
-
-    <label>Sconto Richiesto <span id="scontoMax"></span>:</label>
-    <input type="number" id="sconto" min="1" required>
-    <div id="errorSconto" class="error"></div>
-
-    <button onclick="inviaTelegram(event)">Invia tramite Telegram</button>
-  </form>
-
-  <div id="attendi" class="attendi">
-    TELEGRAM SI APRIRÀ. SCEGLI IL DESTINATARIO E INVIA IL MESSAGGIO.
-  </div>
-
-  <div id="fallbackDiv" class="fallback-message">
-    <strong>Telegram non si è aperto automaticamente?</strong><br>
-    Copia il messaggio qui sotto e incollalo manualmente in Telegram:
-    <div style="background-color: #f8f9fa; padding: 10px; margin: 10px 0; border-left: 4px solid #007bff; white-space: pre-wrap; font-family: monospace; font-size: 14px;" id="fallbackMessage"></div>
-    <button class="copy-button" id="copyBtn" onclick="copiaMessaggio()">Copia Messaggio</button>
-    <br><br>
-    <small>Oppure <a href="https://t.me/" target="_blank">apri Telegram Web</a> manualmente.</small>
-  </div>
 </body>
 </html>
