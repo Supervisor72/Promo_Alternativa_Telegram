@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Richiesta Condizione Alternativa</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 24px 20px 60px;
+      background-color: #0d0f14;
+      color: #e8eaed;
+    }
+
+    h1 {
+      text-align: center;
+      color: #e8b84b;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 28px;
+    }
+
+    .card {
+      position: relative;
+      background-color: #161a22;
+      padding: 24px 22px;
+      border: 1px solid #232936;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, #e8b84b, #b8860b, #c9971f);
+    }
+
+    label {
+      font-weight: 600;
+      margin-bottom: 7px;
+      display: block;
+      font-size: 14px;
+      color: #c5c8ce;
+    }
+
+    #scontoMax {
+      color: #e8b84b;
+      font-family: 'DM Mono', monospace;
+      font-weight: 500;
+    }
+
+    select, input[type="text"], input[type="number"], input[type="date"] {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 18px;
+      background-color: #0d0f14;
+      border: 1px solid #2a3140;
+      border-radius: 8px;
+      font-size: 16px;
+      color: #e8eaed;
+      font-family: 'DM Sans', sans-serif;
+      transition: border-color 0.15s;
+    }
+
+    select:focus, input:focus {
+      outline: none;
+      border-color: #e8b84b;
+    }
+
+    select option { background-color: #161a22; }
+
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      filter: invert(0.8);
+      cursor: pointer;
+    }
+
+    button {
+      background: linear-gradient(90deg, #e8b84b, #c9971f);
+      color: #0d0f14;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 700;
+      width: 100%;
+      margin-top: 8px;
+      font-family: 'DM Sans', sans-serif;
+      transition: filter 0.15s;
+    }
+
+    button:hover { filter: brightness(1.08); }
+
+    .error {
+      color: #ff6b6b;
+      font-size: 13px;
+      margin-top: -10px;
+      margin-bottom: 14px;
+      display: none;
+    }
+
+    .attendi {
+      color: #e8b84b;
+      background-color: rgba(232,184,75,0.08);
+      border: 1px solid rgba(232,184,75,0.3);
+      padding: 16px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 17px;
+      font-weight: 600;
+      margin-top: 18px;
+      display: none;
+    }
+
+    .fallback-message {
+      background-color: #161a22;
+      border: 1px solid #232936;
+      padding: 18px;
+      border-radius: 10px;
+      margin-top: 18px;
+      display: none;
+    }
+
+    .copy-button {
+      background: linear-gradient(90deg, #e8b84b, #c9971f);
+      color: #0d0f14;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      margin-top: 10px;
+      width: auto;
+    }
+
+    .fallback-message a { color: #e8b84b; }
+
+    @media (max-width: 480px) {
+      body { padding: 16px 12px 50px; }
+      select, input, button { font-size: 15px; }
+      .attendi { font-size: 15px; padding: 13px; }
+    }
+  </style>
+
+  <script>
+    function verificaSconto() {
+      const prodotto = document.getElementById("prodotto").value;
+      const sconto = parseFloat(document.getElementById("sconto").value);
+      const errorMsg = document.getElementById("errorSconto");
+
+      if (prodotto === "TV" && sconto > 5) {
+        errorMsg.style.display = "block";
+        errorMsg.textContent = "Per la categoria TV lo sconto massimo è del 5%";
+        return false;
+      } else if (prodotto === "BIANCO" && sconto > 10) {
+        errorMsg.style.display = "block";
+        errorMsg.textContent = "Per la categoria BIANCO lo sconto massimo è del 10%";
+        return false;
+      } else {
+        errorMsg.style.display = "none";
+        return true;
+      }
+    }
+
+    function aggiornaScontoMassimo() {
+      const prodotto = document.getElementById("prodotto").value;
+      const scontoInput = document.getElementById("sconto");
+
+      if (prodotto === "TV") {
+        scontoInput.max = "5";
+        document.getElementById("scontoMax").textContent = "(max 5%)";
+      } else if (prodotto === "BIANCO") {
+        scontoInput.max = "10";
+        document.getElementById("scontoMax").textContent = "(max 10%)";
+      } else {
+        scontoInput.removeAttribute("max");
+        document.getElementById("scontoMax").textContent = "";
+      }
+    }
+
+    function detectOS() {
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      if (/iPad|iPhone|iPod/.test(userAgent) && !window.MSStream) {
+        return 'iOS';
+      } else if (/android/i.test(userAgent)) {
+        return 'Android';
+      }
+      return 'Other';
+    }
+
+    function creaMessaggio() {
+      const pv = document.getElementById("pv").value;
+      const prod = document.getElementById("prodotto").value;
+      const codProd = document.getElementById("codProd").value;
+      const cliente = document.getElementById("cliente").value;
+      const data = document.getElementById("dataVendita").value;
+      const prezzoPart = document.getElementById("prezzoPartenza").value;
+      const prezzoScont = document.getElementById("prezzoScontato").value;
+      const sconto = document.getElementById("sconto").value;
+
+      return `Punto Vendita: ${pv}
+Prodotto: ${prod}
+Codice Prodotto: ${codProd}
+Cliente: ${cliente}
+Data Vendita: ${data}
+Prezzo Partenza: €${prezzoPart}
+Prezzo Scontato: €${prezzoScont}
+Sconto Richiesto: ${sconto}%
+
+Autorizzi Sconto: (Rispondere con "SI" o "NO")`;
+    }
+
+    function copiaMessaggio() {
+      const messaggio = creaMessaggio();
+      navigator.clipboard.writeText(messaggio).then(() => {
+        const button = document.getElementById("copyBtn");
+        const originalText = button.textContent;
+        button.textContent = "✓ Copiato!";
+        setTimeout(() => { button.textContent = originalText; }, 2000);
+      }).catch(() => {
+        const textArea = document.createElement("textarea");
+        textArea.value = messaggio;
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        const button = document.getElementById("copyBtn");
+        const originalText = button.textContent;
+        button.textContent = "✓ Copiato!";
+        setTimeout(() => { button.textContent = originalText; }, 2000);
+      });
+    }
+
+    function inviaTelegram(event) {
+      event.preventDefault();
+      if (!verificaSconto()) return;
+
+      const messaggio = creaMessaggio();
+      const messaggioEncoded = encodeURIComponent(messaggio);
+      const os = detectOS();
+
+      let telegramUrl;
+      let fallbackNeeded = false;
+
+      if (os === 'iOS') {
+        telegramUrl = `tg://msg?text=${messaggioEncoded}`;
+        const testLink = document.createElement('a');
+        testLink.href = telegramUrl;
+        testLink.style.display = 'none';
+        document.body.appendChild(testLink);
+
+        const timeout = setTimeout(() => {
+          fallbackNeeded = true;
+          mostraFallback(messaggio);
+        }, 1000);
+
+        const handleVisibilityChange = () => {
+          if (document.hidden) {
+            clearTimeout(timeout);
+            document.getElementById("attendi").style.display = "block";
+          }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange, { once: true });
+        testLink.click();
+        document.body.removeChild(testLink);
+
+        setTimeout(() => {
+          document.removeEventListener('visibilitychange', handleVisibilityChange);
+          if (!fallbackNeeded && !document.hidden) {
+            mostraFallback(messaggio);
+          }
+        }, 3000);
+
+      } else if (os === 'Android') {
+        telegramUrl = `intent://msg?text=${messaggioEncoded}#Intent;scheme=tg;package=org.telegram.messenger;end`;
+        try {
+          window.location.href = telegramUrl;
+          document.getElementById("attendi").style.display = "block";
+        } catch (e) {
+          const webUrl = `https://t.me/share/url?url=&text=${messaggioEncoded}`;
+          window.open(webUrl, '_blank');
+          document.getElementById("attendi").style.display = "block";
+        }
+      } else {
+        telegramUrl = `https://t.me/share/url?url=&text=${messaggioEncoded}`;
+        window.open(telegramUrl, '_blank');
+        document.getElementById("attendi").style.display = "block";
+      }
+    }
+
+    function mostraFallback(messaggio) {
+      document.getElementById("fallbackMessage").textContent = messaggio;
+      document.getElementById("fallbackDiv").style.display = "block";
+      document.getElementById("attendi").style.display = "none";
+    }
+  </script>
+</head>
+
+<body>
+  <h1>Richiesta Promo Alternativa</h1>
+  <form id="formRichiesta" class="card">
+    <label>Punto Vendita:</label>
+    <select id="pv" required>
+      <option value="">-- Seleziona un punto vendita --</option>
+      <option value="Fano">Fano</option>
+      <option value="Monsano">Monsano</option>
+      <option value="Osimo">Osimo</option>
+      <option value="Macerata">Macerata</option>
+      <option value="Civitanova">Civitanova</option>
+      <option value="Pesaro">Pesaro</option>
+      <option value="Foligno">Foligno</option>
+    </select>
+
+    <label>Prodotto:</label>
+    <select id="prodotto" required onchange="aggiornaScontoMassimo()">
+      <option value="">-- Seleziona categoria prodotto --</option>
+      <option value="TV">TV</option>
+      <option value="BIANCO">BIANCO</option>
+    </select>
+
+    <label>Codice Prodotto:</label>
+    <input type="text" id="codProd" required>
+
+    <label>Cognome Nome Cliente:</label>
+    <input type="text" id="cliente" required>
+
+    <label>Data Vendita:</label>
+    <input type="date" id="dataVendita" required>
+
+    <label>Prezzo Partenza (€):</label>
+    <input type="number" id="prezzoPartenza" step="0.01" required>
+
+    <label>Prezzo Scontato (€):</label>
+    <input type="number" id="prezzoScontato" step="0.01" required>
+
+    <label>Sconto Richiesto <span id="scontoMax"></span>:</label>
+    <input type="number" id="sconto" min="1" required>
+    <div id="errorSconto" class="error"></div>
+
+    <button onclick="inviaTelegram(event)">Invia tramite Telegram</button>
+  </form>
+
+  <div id="attendi" class="attendi">
+    TELEGRAM SI APRIRÀ. SCEGLI IL DESTINATARIO E INVIA IL MESSAGGIO.
+  </div>
+
+  <div id="fallbackDiv" class="fallback-message">
+    <strong>Telegram non si è aperto automaticamente?</strong><br>
+    Copia il messaggio qui sotto e incollalo manualmente in Telegram:
+    <div style="background-color: #0d0f14; padding: 12px; margin: 12px 0; border-left: 3px solid #e8b84b; white-space: pre-wrap; font-family: 'DM Mono', monospace; font-size: 13px; border-radius: 6px; color: #c5c8ce;" id="fallbackMessage"></div>
+    <button class="copy-button" id="copyBtn" onclick="copiaMessaggio()">Copia Messaggio</button>
+    <br><br>
+    <small>Oppure <a href="https://t.me/" target="_blank">apri Telegram Web</a> manualmente.</small>
+  </div>
+</body>
+</html>
